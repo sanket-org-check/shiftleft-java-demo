@@ -216,7 +216,7 @@ public class CustomerController {
    * @param request
    * @throws Exception
    */
-@RequestMapping(value = "/saveSettings", method = RequestMethod.GET)
+  @RequestMapping(value = "/saveSettings", method = RequestMethod.GET)
   public void saveSettings(HttpServletResponse httpResponse, WebRequest request) throws Exception {
     // "Settings" will be stored in a cookie
     // schema: base64(filename,value1,value2...), md5sum(base64(filename,value1,value2...))
@@ -228,8 +228,8 @@ public class CustomerController {
 
     String settingsCookie = request.getHeader("Cookie");
     String[] cookie = settingsCookie.split(",");
-    if(cookie.length<2) {
-      httpResponse.getOutputStream().println("Malformed cookie");
+	if(cookie.length<2) {
+	  httpResponse.getOutputStream().println("Malformed cookie");
       throw new Exception("cookie is incorrect");
     }
 
@@ -238,7 +238,7 @@ public class CustomerController {
     // Check md5sum
     String cookieMD5sum = cookie[1];
     String calcMD5Sum = DigestUtils.md5Hex(base64txt);
-    if(!cookieMD5sum.equals(calcMD5Sum))
+	if(!cookieMD5sum.equals(calcMD5Sum))
     {
       httpResponse.getOutputStream().println("Wrong md5");
       throw new Exception("Invalid MD5");
@@ -246,36 +246,9 @@ public class CustomerController {
 
     // Now we can store on filesystem
     String[] settings = new String(Base64.getDecoder().decode(base64txt)).split(",");
-    // storage will have ClassPathResource as basepath
+	// storage will have ClassPathResource as basepath
     ClassPathResource cpr = new ClassPathResource("./static/");
-    
-    // Fix: Validate filename to prevent directory traversal
-    String filename = settings[0];
-    
-    // Fix: Reject paths with directory traversal attempts or special characters
-    if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
-      httpResponse.getOutputStream().println("Invalid filename");
-      throw new SecurityException("Directory traversal attempt detected");
-    }
-    
-    // Fix: Further restrict to alphanumeric filenames with extensions
-    if (!filename.matches("[a-zA-Z0-9._-]+")) {
-      httpResponse.getOutputStream().println("Invalid filename format");
-      throw new SecurityException("Invalid filename format");
-    }
-    
-    // Fix: Create file safely using normalized paths
-    File baseDir = new File(cpr.getPath());
-    File file = new File(baseDir, filename);
-    
-    // Fix: Verify the normalized path is within allowed directory
-    String baseDirCanonicalPath = baseDir.getCanonicalPath();
-    String fileCanonicalPath = file.getCanonicalPath();
-    if (!fileCanonicalPath.startsWith(baseDirCanonicalPath)) {
-      httpResponse.getOutputStream().println("Invalid path");
-      throw new SecurityException("Path traversal attempt detected");
-    }
-    
+	  File file = new File(cpr.getPath()+settings[0]);
     if(!file.exists()) {
       file.getParentFile().mkdirs();
     }
@@ -283,13 +256,12 @@ public class CustomerController {
     FileOutputStream fos = new FileOutputStream(file, true);
     // First entry is the filename -> remove it
     String[] settingsArr = Arrays.copyOfRange(settings, 1, settings.length);
-    // one setting at a line
+    // on setting at a linez
     fos.write(String.join("\n",settingsArr).getBytes());
     fos.write(("\n"+cookie[cookie.length-1]).getBytes());
     fos.close();
     httpResponse.getOutputStream().println("Settings Saved");
   }
-
 
   /**
    * Debug test for saving and reading a customer
